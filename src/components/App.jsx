@@ -1,88 +1,75 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import Section from "./Description/Description";
 import FeedbackOptions from "./Options/Options";
 import Statistics from "./Feedback/Feedback";
 import Notification from "./Notification/Notification";
 import css from "./App.module.css";
 
-class App extends Component {
-  state = {
-    good: 0,
-    neutral: 0,
-    bad: 0,
-  };
-
-  componentDidMount() {
+const App = () => {
+  const [feedback, setFeedback] = useState(() => {
     const savedFeedback = localStorage.getItem("feedback");
-    if (savedFeedback) {
-      this.setState(JSON.parse(savedFeedback));
-    }
-  }
+    return savedFeedback
+      ? JSON.parse(savedFeedback)
+      : { good: 0, neutral: 0, bad: 0 };
+  });
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState !== this.state) {
-      localStorage.setItem("feedback", JSON.stringify(this.state));
-    }
-  }
+  useEffect(() => {
+    localStorage.setItem("feedback", JSON.stringify(feedback));
+  }, [feedback]);
 
-  handleLeaveFeedback = (option) => {
-    this.setState((prevState) => ({
-      [option]: prevState[option] + 1,
+  const handleLeaveFeedback = (option) => {
+    setFeedback((prevFeedback) => ({
+      ...prevFeedback,
+      [option]: prevFeedback[option] + 1,
     }));
   };
 
-  handleResetFeedback = () => {
-    this.setState({
-      good: 0,
-      neutral: 0,
-      bad: 0,
-    });
+  const handleResetFeedback = () => {
+    setFeedback({ good: 0, neutral: 0, bad: 0 });
     localStorage.removeItem("feedback");
   };
 
-  countTotalFeedback = () => {
-    return Object.values(this.state).reduce((acc, value) => acc + value, 0);
+  const countTotalFeedback = () => {
+    return Object.values(feedback).reduce((acc, value) => acc + value, 0);
   };
 
-  countPositiveFeedbackPercentage = () => {
-    const total = this.countTotalFeedback();
-    return total > 0 ? Math.round((this.state.good / total) * 100) : 0;
+  const countPositiveFeedbackPercentage = () => {
+    const total = countTotalFeedback();
+    return total > 0 ? Math.round((feedback.good / total) * 100) : 0;
   };
 
-  render() {
-    const totalFeedback = this.countTotalFeedback();
-    const positivePercentage = this.countPositiveFeedbackPercentage();
+  const totalFeedback = countTotalFeedback();
+  const positivePercentage = countPositiveFeedbackPercentage();
 
-    return (
-      <div className={css.container}>
-        <Section
-          title="Sip Happens Café"
-          text="Please leave your feedback about our service by selecting one of the options below."
-        >
-          <FeedbackOptions
-            options={this.state}
-            onLeaveFeedback={this.handleLeaveFeedback}
-            onResetFeedback={this.handleResetFeedback}
-            totalFeedback={totalFeedback}
+  return (
+    <div className={css.container}>
+      <Section
+        title="Sip Happens Café"
+        text="Please leave your feedback about our service by selecting one of the options below."
+      >
+        <FeedbackOptions
+          options={feedback}
+          onLeaveFeedback={handleLeaveFeedback}
+          onResetFeedback={handleResetFeedback}
+          totalFeedback={totalFeedback}
+        />
+      </Section>
+
+      <Section title="Statistics">
+        {totalFeedback === 0 ? (
+          <Notification message="There is no feedback yet" />
+        ) : (
+          <Statistics
+            good={feedback.good}
+            neutral={feedback.neutral}
+            bad={feedback.bad}
+            total={totalFeedback}
+            positivePercentage={positivePercentage}
           />
-        </Section>
-
-        <Section title="Statistics">
-          {totalFeedback === 0 ? (
-            <Notification message="There is no feedback yet" />
-          ) : (
-            <Statistics
-              good={this.state.good}
-              neutral={this.state.neutral}
-              bad={this.state.bad}
-              total={totalFeedback}
-              positivePercentage={positivePercentage}
-            />
-          )}
-        </Section>
-      </div>
-    );
-  }
-}
+        )}
+      </Section>
+    </div>
+  );
+};
 
 export default App;
